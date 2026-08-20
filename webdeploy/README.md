@@ -170,3 +170,32 @@ cd proxy && node smoke-test.mjs
 
 Sobe um servidor TCP de eco, passa bytes pela ponte e confere o round-trip.
 `smoke-tls.mjs` faz o mesmo em modo `wss`.
+
+## Risco conhecido: COEP vs. download dos assets
+
+O cliente baixa os assets em runtime de `dudantas/tibia-client`
+(`modules/client_assets/client_assets.lua`), e `Http::download` tem
+implementacao propria para Emscripten via `emscripten_fetch`
+(`src/framework/net/protocolhttp.cpp:384`) -- entao o caminho existe no
+navegador.
+
+O problema potencial e a interacao com o header que nos mesmos exigimos:
+`Cross-Origin-Embedder-Policy: require-corp` bloqueia subrecursos de outra
+origem que nao declarem CORP nem passem por CORS. `raw.githubusercontent.com`
+e `api.github.com` respondem com `Access-Control-Allow-Origin: *` e devem
+passar. Ja `codeload.github.com` -- usado no caminho de arquivo ZIP, que a
+documentacao chama de **padrao** -- e o duvidoso.
+
+Nao mexemos nisso preventivamente porque `require-corp` e o que esta provado
+carregando o cliente hoje. Se o download falhar, tente nesta ordem:
+
+1. Trocar para `Cross-Origin-Embedder-Policy: credentialless` em
+   `client/serve.mjs` e `pages/_headers`. Mantem `crossOriginIsolated`
+   (logo, pthreads seguem funcionando) mas dispensa CORP em recursos de
+   outra origem. Chrome suporta desde a 96; Safari nao.
+2. Se ainda falhar, servir os assets pela nossa propria origem: adicionar
+   uma rota de proxy em `client/serve.mjs` e apontar `config.releasesUrl`
+   para ela. Resolve CORS e COEP de uma vez, ao custo de banda nossa.
+
+Sintoma tipico no console: `net::ERR_BLOCKED_BY_RESPONSE` ou
+`NotSameOriginAfterDefaultedToSameOriginByCoep`.
