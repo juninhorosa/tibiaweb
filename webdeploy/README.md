@@ -82,15 +82,45 @@ loginProtocolPort = 7171
 gameProtocolPort = 8443
 ```
 
-### Publico e gratis (para jogar de fora)
+### Publico e gratis — Cloudflare Tunnel
 
-O proxy fala WSS, que e HTTP upgrade — entao qualquer PaaS que aceite HTTPS
-serve, sem precisar de TCP cru. Duas rotas:
+Quick tunnel nao pede conta, dominio nem cartao. Cada execucao sorteia um
+hostname novo em `*.trycloudflare.com`, publicado em HTTPS/443. O cloudflared
+termina TLS na borda da Cloudflare, entao os proxies rodam sem certificado —
+o cliente continua enxergando `wss://`, que e o que o build Release exige.
 
-- **Cloudflare Tunnel** (gratis, sem cartao): expoe a maquina local com
-  hostname HTTPS. Precisa de dois hostnames, um por endpoint.
-- **Fly.io**: um app pode expor 443 e 8443 com `handlers = ["tls"]`, e o TLS
-  fica na borda — rode o proxy sem `CERT_PATH`/`KEY_PATH`.
+Sao dois tuneis porque sao dois endpoints (login e mundo do jogo).
+
+```
+cd webdeploy
+node tunnel/start.mjs          # deixe rodando; imprime os dois hostnames
+```
+
+Isso gera `server/config.lua` ja com o hostname do tunel do mundo. **Rode
+antes do compose** — se `server/config.lua` nao existir, o Docker cria um
+diretorio com esse nome no lugar do arquivo.
+
+Em outro terminal:
+
+```
+docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d
+```
+
+Na tela de login do cliente, use o hostname `login` impresso pelo script e a
+porta **443**.
+
+#### Restricao de versao
+
+O endereco do mundo so trafega como hostname quando
+`g_game.getClientVersion() > 1010` (`modules/gamelib/protocollogin.lua:206`).
+Abaixo disso o protocolo manda um IPv4 de 4 bytes e o hostname do tunel nao
+cabe. Ou seja: **13.x com Canary funciona, 8.6 nao** — sem patchear o cliente.
+
+#### Limitacoes do quick tunnel
+
+- O hostname muda a cada restart. Quando isso acontecer, rode o script de novo
+  e reinicie o canary para reler o `config.lua`.
+- O servidor roda na sua maquina: se ela desligar, o jogo cai.
 
 ## Teste do proxy
 

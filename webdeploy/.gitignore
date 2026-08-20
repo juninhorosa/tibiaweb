@@ -1,0 +1,3 @@
+# gerados pelo tunnel/start.mjs a cada execucao
+tunnel/endpoints.json
+server/config.lua
