@@ -1,0 +1,33 @@
+# Override para rodar o servidor dentro de um GitHub Codespace.
+#
+# O encaminhamento de portas do Codespaces termina TLS na borda e fala HTTP
+# simples com o container, entao os proxies rodam sem certificado -- o cliente
+# continua vendo wss://, que e o que o build Release exige.
+#
+# Diferenca para o modo tunnel: aqui o hostname e estavel (derivado do nome do
+# codespace), entao o config.lua nao precisa ser regerado a cada restart.
+services:
+  canary:
+    expose:
+      - "7171"
+      - "443"   # gameProtocolPort, definido em server/config.lua
+
+  proxy-login:
+    environment:
+      PORT: "7171"
+      TARGET_HOST: "canary"
+      TARGET_PORT: "7171"
+      CERT_PATH: ""
+      KEY_PATH: ""
+    ports:
+      - "7171:7171"
+
+  proxy-game:
+    environment:
+      PORT: "8443"
+      TARGET_HOST: "canary"
+      TARGET_PORT: "443"
+      CERT_PATH: ""
+      KEY_PATH: ""
+    ports:
+      - "8443:8443"

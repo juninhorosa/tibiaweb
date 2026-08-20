@@ -122,6 +122,46 @@ cabe. Ou seja: **13.x com Canary funciona, 8.6 nao** — sem patchear o cliente.
   e reinicie o canary para reler o `config.lua`.
 - O servidor roda na sua maquina: se ela desligar, o jogo cai.
 
+### Tudo na nuvem — GitHub Codespaces (recomendado para testar)
+
+Nao pede cartao, traz Docker com disco proprio e nao depende da sua maquina
+ficar ligada. Cada porta encaminhada vira um hostname proprio publicado na
+443:
+
+```
+https://<nome-do-codespace>-7171.app.github.dev   -> login
+https://<nome-do-codespace>-8443.app.github.dev   -> mundo do jogo
+```
+
+Como a porta vai no **hostname** e a publicacao e sempre na 443, os dois
+endpoints se encaixam direto no formato `wss://host:porta` que o cliente
+monta. E o hostname e estavel entre restarts, diferente do quick tunnel.
+
+Dentro do codespace:
+
+```
+cd webdeploy
+node codespaces/test-forward.mjs     # confirma que wss binario atravessa
+node codespaces/setup.mjs            # gera server/config.lua
+docker compose -f docker-compose.yml -f docker-compose.codespaces.yml up -d
+```
+
+**Rode o teste antes de qualquer outra coisa.** A documentacao do GitHub nao
+afirma em lugar nenhum que WebSocket funciona pelo `app.github.dev` — o teste
+existe para nao descobrirmos isso depois de montar o servidor inteiro.
+
+Ressalvas:
+
+- As duas portas precisam estar com visibilidade **public** na aba Ports.
+  Porta privada exige token no header, e o cliente WASM nao manda nenhum.
+- O codespace hiberna apos ~30 min ocioso. Serve para testar, nao para 24/7.
+- A cota gratuita e cobrada em core-hours: numa maquina de 2 nucleos, 1 hora
+  real consome 2. Confira o valor atual na sua pagina de billing.
+
+Para 24/7 de verdade, o caminho e uma VM (Oracle Cloud Always Free e a opcao
+gratuita permanente). O stack nao muda: o proxy fala WSS, entao funciona atras
+de qualquer coisa que termine HTTPS.
+
 ## Teste do proxy
 
 ```

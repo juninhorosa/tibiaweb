@@ -1,0 +1,17 @@
+{
+  "name": "tibiaweb-server",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
+  },
+  // 7171 = login, 8443 = mundo do jogo. Cada porta vira um hostname
+  // proprio em app.github.dev, sempre publicado na 443 -- que e o
+  // formato wss://host:porta que o cliente monta.
+  "forwardPorts": [7171, 8443],
+  "portsAttributes": {
+    "7171": { "label": "login (wss)", "visibility": "public", "onAutoForward": "silent" },
+    "8443": { "label": "game world (wss)", "visibility": "public", "onAutoForward": "silent" }
+  },
+  "postCreateCommand": "cd webdeploy/proxy && npm install --omit=dev"
+}
