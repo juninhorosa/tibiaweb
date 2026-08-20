@@ -1,0 +1,13 @@
+# Obrigatorio: o bundle usa pthreads -> precisa de SharedArrayBuffer,
+# que o navegador so libera com cross-origin isolation.
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Resource-Policy: same-origin
+
+/*.wasm
+  Content-Type: application/wasm
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.data
+  Cache-Control: public, max-age=31536000, immutable

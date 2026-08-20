@@ -1,0 +1,53 @@
+name: Build Web (WASM)
+
+# Compila SOMENTE o bundle do navegador (emscripten/WebAssembly).
+# Evita o ci.yml, cujo workflow_dispatch dispara Windows/macOS/Android tambem.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "browser/**"
+      - "modules/**"
+      - "data/**"
+      - "Dockerfile.browser"
+      - "Dockerfile.browser.sh"
+      - ".github/workflows/build-web.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Browser Bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      BUILD_LOG: docker-browser-build.log
+      OUTPUT_DIR: build-emscripten-web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Liberar espaco no runner
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost
+          df -h /
+
+      - name: Build do bundle WASM via Docker
+        run: bash Dockerfile.browser.sh
+
+      - name: Adicionar headers do Cloudflare Pages
+        run: |
+          cp webdeploy/pages/_headers "${OUTPUT_DIR}/_headers"
+          ls -la "${OUTPUT_DIR}"
+
+      - name: Upload do artefato
+        uses: actions/upload-artifact@v7
+        with:
+          name: otclient-web-${{ github.sha }}
+          path: |
+            ${{ env.BUILD_LOG }}
+            ${{ env.OUTPUT_DIR }}
+          retention-days: 14

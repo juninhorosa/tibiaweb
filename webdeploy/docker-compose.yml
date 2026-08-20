@@ -1,0 +1,65 @@
+# Stack de teste local: servidor OT + duas pontes WebSocket/TLS.
+#
+# Por que duas pontes: o OTClient faz DUAS conexoes. A primeira vai para o
+# login server (host:porta que voce digita). O login responde dizendo onde
+# fica o mundo do jogo, e o cliente abre uma segunda conexao para
+# wss://<ip anunciado>:<gameProtocolPort>. Cada uma precisa do seu endpoint.
+services:
+  mariadb:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: canary
+      MARIADB_DATABASE: canary
+      MARIADB_USER: canary
+      MARIADB_PASSWORD: canary
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      retries: 12
+
+  canary:
+    image: ghcr.io/opentibiabr/canary:latest
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    volumes:
+      # coloque aqui o config.lua e a pasta data do servidor
+      - ./server/config.lua:/canary/config.lua:ro
+    expose:
+      - "7171"
+      - "8443"
+
+  # login: o cliente conecta em wss://localhost:7171
+  proxy-login:
+    build: ./proxy
+    depends_on: [canary]
+    environment:
+      PORT: "7171"
+      TARGET_HOST: "canary"
+      TARGET_PORT: "7171"
+      CERT_PATH: "/certs/cert.pem"
+      KEY_PATH: "/certs/key.pem"
+    volumes:
+      - ./proxy/certs:/certs:ro
+    ports:
+      - "7171:7171"
+
+  # mundo do jogo: config.lua deve anunciar gameProtocolPort = 8443
+  proxy-game:
+    build: ./proxy
+    depends_on: [canary]
+    environment:
+      PORT: "8443"
+      TARGET_HOST: "canary"
+      TARGET_PORT: "8443"
+      CERT_PATH: "/certs/cert.pem"
+      KEY_PATH: "/certs/key.pem"
+    volumes:
+      - ./proxy/certs:/certs:ro
+    ports:
+      - "8443:8443"
+
+volumes:
+  db:
