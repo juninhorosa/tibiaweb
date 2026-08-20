@@ -1,3 +1,4 @@
-# gerados pelo tunnel/start.mjs a cada execucao
+# gerados pelos scripts de setup a cada execucao
+.env
 tunnel/endpoints.json
-server/config.lua
+codespaces/endpoints.json

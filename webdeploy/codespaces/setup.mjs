@@ -1,8 +1,8 @@
-// Gera o config.lua do servidor a partir do nome do codespace.
+// Gera o .env do compose a partir do nome do codespace.
 //
 // O Codespaces publica cada porta encaminhada como um hostname proprio
 // (<nome>-<porta>.app.github.dev), sempre na 443. Como o cliente monta
-// wss://<host>:<porta> literalmente, o gameProtocolPort precisa ser 443 --
+// wss://<host>:<porta> literalmente, o CANARY_GAME_PORT precisa ser 443 --
 // esse valor e o que ele usa na segunda conexao.
 import fs from "node:fs";
 import path from "node:path";
@@ -20,23 +20,8 @@ const loginHost = `${NAME}-7171.${DOMAIN}`;
 const gameHost = `${NAME}-8443.${DOMAIN}`;
 const PUBLIC_PORT = 443;
 
-const configLua = `-- gerado por webdeploy/codespaces/setup.mjs
--- hostname derivado do nome do codespace: estavel entre restarts.
-
-ip = "${gameHost}"
-loginProtocolPort = 7171
-gameProtocolPort = ${PUBLIC_PORT}
-statusProtocolPort = 7171
-
-mysqlHost = "mariadb"
-mysqlUser = "canary"
-mysqlPass = "canary"
-mysqlDatabase = "canary"
-mysqlPort = 3306
-`;
-
 const ROOT = path.join(import.meta.dirname, "..");
-fs.writeFileSync(path.join(ROOT, "server", "config.lua"), configLua);
+fs.writeFileSync(path.join(ROOT, ".env"), `GAME_HOST=${gameHost}\n`);
 fs.writeFileSync(
   path.join(import.meta.dirname, "endpoints.json"),
   JSON.stringify({ login: loginHost, game: gameHost, port: PUBLIC_PORT }, null, 2)
@@ -44,19 +29,18 @@ fs.writeFileSync(
 
 console.log(`
 ================================================================
-  Gerado: webdeploy/server/config.lua
+  Gerado: webdeploy/.env  (GAME_HOST=${gameHost})
 
   Na tela de login do cliente web:
 
       servidor : ${loginHost}
       porta    : ${PUBLIC_PORT}
 
-  Mundo do jogo anunciado como ${gameHost}:${PUBLIC_PORT}
-
-  IMPORTANTE: as duas portas precisam estar com visibilidade
-  PUBLIC na aba Ports. O devcontainer.json ja pede isso, mas
-  confira -- porta privada exige token no header, e o cliente
-  WASM nao manda nenhum.
+  ATENCAO: as duas portas precisam estar com visibilidade PUBLIC
+  na aba Ports. O devcontainer.json pede isso, mas o GitHub NAO
+  honra a marcacao automaticamente -- e preciso clicar. Porta
+  privada responde 302 (redirect para login), e o cliente WASM
+  nao manda token nenhum.
 
   Suba o servidor:
 

@@ -1,14 +1,19 @@
-# Stack de teste local: servidor OT + duas pontes WebSocket/TLS.
+# Servidor OT + duas pontes WebSocket/TCP.
 #
 # Por que duas pontes: o OTClient faz DUAS conexoes. A primeira vai para o
-# login server (host:porta que voce digita). O login responde dizendo onde
-# fica o mundo do jogo, e o cliente abre uma segunda conexao para
-# wss://<ip anunciado>:<gameProtocolPort>. Cada uma precisa do seu endpoint.
+# login server (host:porta digitados na tela). O login responde dizendo onde
+# fica o mundo, e o cliente abre uma segunda conexao para
+# wss://<ip anunciado>:<CANARY_GAME_PORT>. Cada uma precisa do seu endpoint.
+#
+# O Canary se configura por variaveis CANARY_* -- o entrypoint reescreve o
+# config.lua sozinho. Nao monte um config.lua aqui: alem de ignorado, se for
+# montado como somente-leitura o entrypoint falha e o servidor fica preso em
+# "DB offline, trying again".
 services:
   mariadb:
     image: mariadb:11
     environment:
-      MARIADB_ROOT_PASSWORD: canary
+      MARIADB_ROOT_PASSWORD: root
       MARIADB_DATABASE: canary
       MARIADB_USER: canary
       MARIADB_PASSWORD: canary
@@ -17,21 +22,40 @@ services:
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
-      retries: 12
+      timeout: 5s
+      retries: 20
 
   canary:
     image: ghcr.io/opentibiabr/canary:latest
     depends_on:
       mariadb:
         condition: service_healthy
+    environment:
+      CANARY_DB_HOST: mariadb
+      CANARY_DB_PORT: 3306
+      CANARY_DB_NAME: canary
+      CANARY_DB_USER: canary
+      CANARY_DB_PASSWORD: canary
+
+      CANARY_SERVER_NAME: TibiaWeb
+      # hostname publico do MUNDO do jogo -- gravado em .env pelo script de setup
+      CANARY_SERVER_IP: ${GAME_HOST:?rode o script de setup primeiro para gerar .env}
+
+      CANARY_LOGIN_PORT: 7171
+      # 443 porque e o valor que o cliente usa literalmente na segunda conexao,
+      # e as plataformas publicam tudo na 443
+      CANARY_GAME_PORT: 443
+      CANARY_STATUS_PORT: 7173
+
+      CANARY_TEST_ACCOUNTS: "true"
+      CANARY_DATA_PACK: data-otservbr-global
+      CANARY_MAP_URL: https://github.com/opentibiabr/canary/releases/download/v3.6.1/otservbr.otbm
     volumes:
-      # coloque aqui o config.lua e a pasta data do servidor
-      - ./server/config.lua:/canary/config.lua:ro
+      - server-data:/data
     expose:
       - "7171"
-      - "8443"
+      - "443"
 
-  # login: o cliente conecta em wss://localhost:7171
   proxy-login:
     build: ./proxy
     depends_on: [canary]
@@ -39,27 +63,15 @@ services:
       PORT: "7171"
       TARGET_HOST: "canary"
       TARGET_PORT: "7171"
-      CERT_PATH: "/certs/cert.pem"
-      KEY_PATH: "/certs/key.pem"
-    volumes:
-      - ./proxy/certs:/certs:ro
-    ports:
-      - "7171:7171"
 
-  # mundo do jogo: config.lua deve anunciar gameProtocolPort = 8443
   proxy-game:
     build: ./proxy
     depends_on: [canary]
     environment:
       PORT: "8443"
       TARGET_HOST: "canary"
-      TARGET_PORT: "8443"
-      CERT_PATH: "/certs/cert.pem"
-      KEY_PATH: "/certs/key.pem"
-    volumes:
-      - ./proxy/certs:/certs:ro
-    ports:
-      - "8443:8443"
+      TARGET_PORT: "443"
 
 volumes:
   db:
+  server-data:

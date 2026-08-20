@@ -1,30 +1,12 @@
-# Override para o modo Cloudflare Tunnel.
+# Override para Cloudflare Tunnel (servidor na sua maquina).
 #
 # O cloudflared termina TLS na borda da Cloudflare e fala HTTP simples com o
-# localhost -- entao os proxies rodam sem cert. O cliente continua vendo
-# wss://, que e o que o build Release exige.
+# localhost, entao os proxies rodam sem certificado.
 services:
-  canary:
-    expose:
-      - "7171"
-      - "443"   # gameProtocolPort, definido em server/config.lua
-
   proxy-login:
-    environment:
-      PORT: "7171"
-      TARGET_HOST: "canary"
-      TARGET_PORT: "7171"
-      CERT_PATH: ""
-      KEY_PATH: ""
     ports:
       - "127.0.0.1:7171:7171"
 
   proxy-game:
-    environment:
-      PORT: "8443"
-      TARGET_HOST: "canary"
-      TARGET_PORT: "443"
-      CERT_PATH: ""
-      KEY_PATH: ""
     ports:
       - "127.0.0.1:8443:8443"

@@ -20,8 +20,8 @@ Tres restricoes que definem tudo:
    Por isso **GitHub Pages nao serve** — ele nao permite headers customizados.
    Cloudflare Pages e Netlify permitem.
 3. **Duas conexoes.** Login e mundo do jogo sao endpoints separados. O
-   `gameProtocolPort` do `config.lua` e o que o cliente vai usar na segunda
-   conexao, entao ele precisa ser uma porta que o proxy exponha.
+   `CANARY_GAME_PORT` e o que o cliente vai usar na segunda conexao, entao
+   ele precisa ser uma porta que o proxy exponha.
 
 ## Passo 1 — compilar o WASM (no GitHub Actions, nao na sua maquina)
 
@@ -74,13 +74,13 @@ O certificado em `proxy/certs/` e self-signed: abra `https://localhost:7171` e
 `https://localhost:8443` uma vez em cada e aceite o aviso, senao o navegador
 recusa o `wss://` silenciosamente.
 
-No `config.lua` do Canary:
+O Canary se configura por variaveis `CANARY_*`; o entrypoint reescreve o
+`config.lua` dele sozinho. **Nao monte um config.lua** — se for montado como
+somente-leitura, o entrypoint falha em grava-lo e o servidor fica preso em
+`DB offline, trying again`, mesmo com o banco saudavel.
 
-```lua
-ip = "localhost"
-loginProtocolPort = 7171
-gameProtocolPort = 8443
-```
+Para rodar 100% local, gere um `.env` com `GAME_HOST=localhost` e ajuste
+`CANARY_GAME_PORT` para 8443 no compose.
 
 ### Publico e gratis — Cloudflare Tunnel
 
@@ -96,9 +96,9 @@ cd webdeploy
 node tunnel/start.mjs          # deixe rodando; imprime os dois hostnames
 ```
 
-Isso gera `server/config.lua` ja com o hostname do tunel do mundo. **Rode
-antes do compose** — se `server/config.lua` nao existir, o Docker cria um
-diretorio com esse nome no lugar do arquivo.
+Isso gera `.env` com o `GAME_HOST` do tunel do mundo. **Rode antes do
+compose** — sem o `.env` o compose falha de proposito, em vez de subir o
+servidor anunciando um endereco errado.
 
 Em outro terminal:
 
@@ -119,7 +119,7 @@ cabe. Ou seja: **13.x com Canary funciona, 8.6 nao** — sem patchear o cliente.
 #### Limitacoes do quick tunnel
 
 - O hostname muda a cada restart. Quando isso acontecer, rode o script de novo
-  e reinicie o canary para reler o `config.lua`.
+  e reinicie o canary para reler o `.env`.
 - O servidor roda na sua maquina: se ela desligar, o jogo cai.
 
 ### Tudo na nuvem — GitHub Codespaces (recomendado para testar)
@@ -141,8 +141,8 @@ Dentro do codespace:
 
 ```
 cd webdeploy
-node codespaces/test-forward.mjs     # confirma que wss binario atravessa
-node codespaces/setup.mjs            # gera server/config.lua
+node proxy/test-forward.mjs          # confirma que wss binario atravessa
+node codespaces/setup.mjs            # gera .env com GAME_HOST
 docker compose -f docker-compose.yml -f docker-compose.codespaces.yml up -d
 ```
 

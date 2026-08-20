@@ -64,27 +64,12 @@ const results = await Promise.all(ENDPOINTS.map(startTunnel));
 const login = results.find((r) => r.name === "login");
 const game = results.find((r) => r.name === "game");
 
-// Cloudflare publica tudo em 443. O gameProtocolPort precisa ser 443 porque
+// Cloudflare publica tudo em 443. O CANARY_GAME_PORT precisa ser 443 porque
 // esse valor e o que o cliente usa literalmente na segunda conexao.
 const PUBLIC_PORT = 443;
 
-const configLua = `-- gerado por webdeploy/tunnel/start.mjs
--- o hostname muda a cada restart do quick tunnel; rode o script de novo
--- e reinicie o canary quando isso acontecer.
-
-ip = "${game.host}"
-loginProtocolPort = 7171
-gameProtocolPort = ${PUBLIC_PORT}
-statusProtocolPort = 7171
-
-mysqlHost = "mariadb"
-mysqlUser = "canary"
-mysqlPass = "canary"
-mysqlDatabase = "canary"
-mysqlPort = 3306
-`;
-
-fs.writeFileSync(path.join(ROOT, "server", "config.lua"), configLua);
+fs.writeFileSync(path.join(ROOT, ".env"), `GAME_HOST=${game.host}
+`);
 fs.writeFileSync(
   path.join(HERE, "endpoints.json"),
   JSON.stringify({ login: login.host, game: game.host, port: PUBLIC_PORT }, null, 2)
@@ -92,7 +77,7 @@ fs.writeFileSync(
 
 console.log(`
 ================================================================
-  Tuneis no ar. Gerado: webdeploy/server/config.lua
+  Tuneis no ar. Gerado: webdeploy/.env
 
   Na tela de login do cliente web, digite:
 

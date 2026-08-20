@@ -3,7 +3,8 @@
 // nenhum, entao nao da para assumir -- e o mesmo teste que fizemos com o
 // Cloudflare Tunnel antes de confiar nele.
 //
-// Rode DENTRO do codespace, com as portas ja publicas.
+// Rode DENTRO do codespace, com as portas ja publicas:
+//   node proxy/test-forward.mjs
 import net from "node:net";
 import { spawn } from "node:child_process";
 import { WebSocket } from "ws";
@@ -16,7 +17,7 @@ if (!NAME || !DOMAIN) {
   process.exit(1);
 }
 
-const PROXY_DIR = path.join(import.meta.dirname, "..", "proxy");
+const PROXY_DIR = import.meta.dirname;
 
 // eco TCP em 9999, fazendo o papel do servidor OT
 const echo = net.createServer((s) => s.pipe(s));
