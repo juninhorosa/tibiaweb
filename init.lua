@@ -63,43 +63,28 @@ if ENABLE_SERVERS then
     --
     Servers_init = {
 
-        -- Local login server
+        -- Ravenhold
         ---
-        -- Configuration for local login server.
-        -- @class table
-        -- @name local_login
-        -- @field port Port used for HTTP connection
-        -- @field protocol Protocol identifier used by the application
-        -- @field httpLogin Enables HTTP-based login on the server
-        -- @field useAuthenticator Enables additional authentication layer
+        -- Servidor do jogo. A porta e 443 porque o cliente monta a URL como
+        -- wss://<host>:<porta> literalmente (webconnection.cpp), e as
+        -- plataformas de hospedagem publicam tudo na 443.
         --
-        ["http://127.0.0.1/login.php"] = {
-            port = 80,
-            protocol = 1511,
-            httpLogin = true,
-            useAuthenticator = false
-        },
-
-        -- External server
-        ---
-        -- Configuration for external server ip.net.
-        -- @class table
-        -- @name ip_net
-        -- @field port TCP port used for connection
-        -- @field protocol Protocol identifier used by the server
-        -- @field httpLogin Indicates if the server allows HTTP login
+        -- ATENCAO: este hostname vem do codespace atual. Se o codespace for
+        -- recriado, o nome muda e este valor precisa ser atualizado --
+        -- recompilando, porque init.lua e embutido no bundle via
+        -- --preload-file (src/CMakeLists.txt).
         --
-        ["ip.net"] = {
-            port = 7171,
-            protocol = 860,
+        ["miniature-happiness-6rjq64rj44rc46j7-7171.app.github.dev"] = {
+            port = 443,
+            protocol = 1525,
             httpLogin = false
         }
     }
 end
 
-g_app.setName("OTClient - Redemption");
-g_app.setCompactName("otclient");
-g_app.setOrganizationName("otcr");
+g_app.setName("Ravenhold");
+g_app.setCompactName("ravenhold");
+g_app.setOrganizationName("ravenhold");
 
 g_app.hasUpdater = function()
     return (Services.updater and Services.updater ~= "" and g_modules.getModule("updater"))

@@ -11,6 +11,8 @@ on:
       - "browser/**"
       - "modules/**"
       - "data/**"
+      - "init.lua"
+      - "otclientrc.lua"
       - "Dockerfile.browser"
       - "Dockerfile.browser.sh"
       - ".github/workflows/build-web.yml"

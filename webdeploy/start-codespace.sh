@@ -6,7 +6,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-RUN_ID="${RUN_ID:-32425854185}"          # build do WASM; troque se recompilar
+# ultimo build do WASM que passou (pode ser fixado com RUN_ID=...)
 CLIENT_DIR="/workspaces/client-build/build-emscripten-web"
 
 if [ -z "${CODESPACE_NAME:-}" ]; then
