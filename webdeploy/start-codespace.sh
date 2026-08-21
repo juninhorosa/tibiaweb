@@ -73,7 +73,11 @@ node codespaces/setup.mjs > /dev/null
 # 3. servidor OT + pontes WebSocket/TCP + API de contas
 # ---------------------------------------------------------------------------
 echo "==> subindo servidor (a primeira vez baixa o mapa; leva alguns minutos)"
-docker compose -f docker-compose.yml -f docker-compose.codespaces.yml up -d
+# --build de proposito: auth/server.js e client/serve.mjs entram na imagem por
+# COPY, entao "up -d" sozinho continuaria rodando o codigo antigo mesmo depois
+# de um git pull. Com o cache de camadas, quando nada mudou isto custa
+# segundos.
+docker compose -f docker-compose.yml -f docker-compose.codespaces.yml up -d --build
 
 # O cliente estatico agora e um container (servico "client" no compose), com
 # restart: unless-stopped como os demais. Antes era um "nohup node ... &"
@@ -130,6 +134,28 @@ for p in ${PUBLIC_PORTS}; do
     PENDENTES="${PENDENTES} ${p}"
   fi
 done
+
+# ---------------------------------------------------------------------------
+# 6. conferir o login web service
+#
+# E a peca mais facil de quebrar em silencio: se ela nao responder JSON, o
+# cliente mostra so "Unknown error" e nao da para saber de onde veio.
+# ---------------------------------------------------------------------------
+echo "==> conferindo o login web service"
+CFG=$(curl -s --max-time 10 "http://127.0.0.1:8080/api/config" || true)
+case "${CFG}" in
+  *loginUrl*) echo "    /api/config: $(echo "${CFG}" | tr -d '
+')" ;;
+  *)          echo "    /api/config: SEM RESPOSTA (o cliente vai usar o endereco padrao do bundle)" ;;
+esac
+
+# credencial invalida de proposito: aqui interessa o FORMATO da resposta, nao
+# entrar. errorCode presente = o servico esta de pe e falando o contrato certo.
+LOG=$(curl -s --max-time 10 -X POST "http://127.0.0.1:8080/login"   -H 'content-type: application/json'   -d '{"email":"__inexistente__","password":"__x__","type":"login"}' || true)
+case "${LOG}" in
+  *errorCode*) echo "    /login: respondendo no contrato esperado" ;;
+  *)           echo "    /login: RESPOSTA INESPERADA -> ${LOG}" ;;
+esac
 
 cat <<TXT
 
