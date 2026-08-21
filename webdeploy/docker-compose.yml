@@ -9,9 +9,14 @@
 # config.lua sozinho. Nao monte um config.lua aqui: alem de ignorado, se for
 # montado como somente-leitura o entrypoint falha e o servidor fica preso em
 # "DB offline, trying again".
+# Todo servico usa restart: unless-stopped de proposito. O daemon do Docker
+# sobe junto com o codespace, entao os containers voltam sozinhos depois de
+# cada hibernacao -- sem hook do Codespaces, sem script, sem terminal. Os
+# hooks de ciclo de vida se mostraram nao confiaveis aqui.
 services:
   mariadb:
     image: mariadb:11
+    restart: unless-stopped
     environment:
       MARIADB_ROOT_PASSWORD: root
       MARIADB_DATABASE: canary
@@ -27,6 +32,7 @@ services:
 
   canary:
     image: ghcr.io/opentibiabr/canary:latest
+    restart: unless-stopped
     depends_on:
       mariadb:
         condition: service_healthy
@@ -59,6 +65,7 @@ services:
   # API de contas do Ravenhold (criacao de conta pela tela do cliente)
   auth:
     build: ./auth
+    restart: unless-stopped
     depends_on:
       mariadb:
         condition: service_healthy
@@ -72,6 +79,7 @@ services:
 
   proxy-login:
     build: ./proxy
+    restart: unless-stopped
     depends_on: [canary]
     environment:
       PORT: "7171"
@@ -80,11 +88,26 @@ services:
 
   proxy-game:
     build: ./proxy
+    restart: unless-stopped
     depends_on: [canary]
     environment:
       PORT: "8443"
       TARGET_HOST: "canary"
       TARGET_PORT: "443"
+
+  # O cliente web tambem roda em container: era a unica peca solta, tocada
+  # por "nohup node ... &", e justamente a que morria a cada hibernacao.
+  client:
+    build: ./client
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      CLIENT_DIR: /client/build-emscripten-web
+      AUTH_ORIGIN: http://auth:8081
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      GITHUB_REPOSITORY: ${GITHUB_REPOSITORY:-juninhorosa/tibiaweb}
+    volumes:
+      - /workspaces/client-build:/client
 
 volumes:
   db:

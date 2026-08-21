@@ -75,11 +75,9 @@ node codespaces/setup.mjs > /dev/null
 echo "==> subindo servidor (a primeira vez baixa o mapa; leva alguns minutos)"
 docker compose -f docker-compose.yml -f docker-compose.codespaces.yml up -d
 
-# ---------------------------------------------------------------------------
-# 4. cliente estatico com COOP/COEP
-# ---------------------------------------------------------------------------
-pkill -f "client/serve.mjs" 2>/dev/null || true
-CLIENT_DIR="${CLIENT_DIR}" nohup node client/serve.mjs > /tmp/client-serve.log 2>&1 &
+# O cliente estatico agora e um container (servico "client" no compose), com
+# restart: unless-stopped como os demais. Antes era um "nohup node ... &"
+# solto, e era justamente a peca que sumia a cada hibernacao.
 
 # ---------------------------------------------------------------------------
 # 5. publicar as portas
