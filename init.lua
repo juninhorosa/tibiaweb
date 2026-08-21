@@ -25,7 +25,19 @@ Services = {
 
 --- Enables or disables the entire server configuration block.
 -- Set to `false` to disable all configuration below.
-local ENABLE_SERVERS = true
+-- DESLIGADO de proposito.
+--
+-- Com exatamente uma entrada em Servers_init, o cliente PRE-CARREGA os assets
+-- daquela versao ainda no boot. Como os de 1525 nao existem no bundle, ele
+-- falha e abre um modal de erro que captura o input -- nem o seletor de idioma
+-- responde, e nao da para chegar na tela de login.
+--
+-- O auto-install de assets so dispara no clique de "Entrar"
+-- (client_entergame/entergame.lua:803), depois do boot. Ou seja: preload aqui
+-- impede justamente o fluxo que baixaria os assets.
+--
+-- Religue quando os assets de 1525 ja estiverem instalados.
+local ENABLE_SERVERS = false
 
 ---
 -- @module Servers_init
