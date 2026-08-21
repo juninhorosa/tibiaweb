@@ -1,0 +1,38 @@
+{
+  // Tarefas de operacao do codespace.
+  //
+  // Existem porque o terminal do VS Code na web nem sempre esta disponivel --
+  // durante o postStartCommand ele nao abre, e o encaminhamento de portas so
+  // aparece depois que algo escuta nelas. Uma tarefa e executavel pela paleta
+  // de comandos, que funciona mesmo nesses momentos.
+  //
+  // Toda tarefa grava a saida em _deploy.log: assim da para abrir o log no
+  // editor e ver o que aconteceu, sem depender de ler o terminal.
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "ravenhold: deploy",
+      "detail": "git pull + sobe a pilha inteira, reconstruindo as imagens",
+      "type": "shell",
+      "command": "cd /workspaces/tibiaweb && { git pull origin main --rebase --autostash && bash webdeploy/start-codespace.sh; } > _deploy.log 2>&1; echo \"CODIGO_DE_SAIDA=$?\" >> _deploy.log",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "ravenhold: estado",
+      "detail": "containers, portas e resposta das rotas, em _deploy.log",
+      "type": "shell",
+      "command": "cd /workspaces/tibiaweb && { echo '--- commit ---'; git log --oneline -3; echo '--- containers ---'; docker compose -f webdeploy/docker-compose.yml -f webdeploy/docker-compose.codespaces.yml ps; echo '--- rotas ---'; curl -s -o /dev/null -w '/api/config %{http_code}\n' http://127.0.0.1:8080/api/config; curl -s -o /dev/null -w '/login %{http_code}\n' -X POST http://127.0.0.1:8080/login -H 'content-type: application/json' -d '{\"email\":\"x\",\"password\":\"y\"}'; echo '--- config ---'; curl -s http://127.0.0.1:8080/api/config; } > _deploy.log 2>&1; echo \"CODIGO_DE_SAIDA=$?\" >> _deploy.log",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "ravenhold: publicar portas",
+      "detail": "torna 7171, 8443 e 8080 publicas",
+      "type": "shell",
+      "command": "cd /workspaces/tibiaweb && { for p in 7171 8443 8080; do gh codespace ports visibility $p:public -c $CODESPACE_NAME && echo \"$p ok\" || echo \"$p falhou\"; done; } > _deploy.log 2>&1; echo \"CODIGO_DE_SAIDA=$?\" >> _deploy.log",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    }
+  ]
+}

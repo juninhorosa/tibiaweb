@@ -334,3 +334,4 @@ android/build/
 luajit-src/
 CMakeUserPresets.json
 **/.canary-shared-cache/
+_deploy.log
