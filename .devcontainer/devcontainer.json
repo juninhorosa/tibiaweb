@@ -15,5 +15,13 @@
     "8443": { "label": "game world (wss)", "visibility": "public", "onAutoForward": "silent" },
     "8080": { "label": "cliente web", "visibility": "public", "onAutoForward": "silent" }
   },
-  "postCreateCommand": "cd webdeploy/proxy && npm install --omit=dev"
+  "postCreateCommand": "cd webdeploy/proxy && npm install --omit=dev",
+
+  // Sobe tudo a cada start do codespace. Sem isto, todo restart exige rodar
+  // o script na mao -- e esquecer disso rende um 404 confuso, porque as
+  // portas so aparecem quando algum processo escuta nelas.
+  //
+  // O git pull vem junto de proposito: o script evolui, e um codespace
+  // parado por dias reiniciaria com uma versao velha.
+  "postStartCommand": "git pull origin main --rebase --autostash || true; nohup bash webdeploy/start-codespace.sh > /tmp/start-codespace.log 2>&1 &"
 }
