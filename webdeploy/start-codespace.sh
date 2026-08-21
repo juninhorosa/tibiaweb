@@ -16,6 +16,12 @@ fi
 
 # 1. bundle do cliente (baixa uma vez; o disco do codespace persiste)
 if [ ! -f "${CLIENT_DIR}/otclient.wasm" ]; then
+  # sem RUN_ID explicito, pega o ultimo build que passou
+  RUN_ID="${RUN_ID:-$(curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}"     "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/build-web.yml/runs?status=success&per_page=1"     | grep -oE '"id": ?[0-9]+' | head -1 | grep -oE '[0-9]+')}"
+  if [ -z "${RUN_ID}" ]; then
+    echo "Nenhum build concluido com sucesso encontrado." >&2
+    exit 1
+  fi
   echo "==> baixando o bundle do cliente (build ${RUN_ID})"
   ART=$(curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" \
     "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts" \
