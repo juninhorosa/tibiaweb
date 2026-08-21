@@ -15,7 +15,15 @@ Services = {
         strictManifestSha256 = true,
         allowRawFallbackHashMismatch = false,
         allowMissingPackedRawFallback = true,
-        preferArchive = true,
+        -- false de proposito. Com preferArchive o cliente baixa o zip inteiro
+        -- da release (tibia-client-15.25 tem 395 MB) para dentro da memoria
+        -- e so entao extrai. O build WASM tem heap FIXO de 1 GB
+        -- (ALLOW_MEMORY_GROWTH=0, INITIAL_MEMORY=1073741824), entao zip mais
+        -- conteudo extraido nao cabe. O caminho de manifesto baixa arquivo a
+        -- arquivo e cabe.
+        preferArchive = false,
+        -- e nao volta para o arquivo se o manifesto falhar: seria trocar um
+        -- erro claro por um estouro de memoria
         fallbackToArchiveOnManifestFailure = false,
         installArchiveExtras = true,
         archiveExtraPrefixes = { "bin" },
