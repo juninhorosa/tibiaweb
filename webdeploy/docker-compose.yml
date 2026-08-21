@@ -56,6 +56,20 @@ services:
       - "7171"
       - "443"
 
+  # API de contas do Ravenhold (criacao de conta pela tela do cliente)
+  auth:
+    build: ./auth
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      PORT: "8081"
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_USER: canary
+      DB_PASSWORD: canary
+      DB_NAME: canary
+
   proxy-login:
     build: ./proxy
     depends_on: [canary]

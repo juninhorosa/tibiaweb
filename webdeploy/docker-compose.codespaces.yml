@@ -4,6 +4,12 @@
 # container, entao os proxies rodam sem certificado -- o cliente continua
 # vendo wss://, que e o que o build Release exige.
 services:
+  # so o localhost do codespace alcanca a API; o acesso publico passa
+  # pelo proxy /api do servidor estatico, que e mesma origem do cliente
+  auth:
+    ports:
+      - "127.0.0.1:8081:8081"
+
   proxy-login:
     ports:
       - "7171:7171"

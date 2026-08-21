@@ -1,0 +1,11 @@
+Module
+  name: ravenhold
+  description: Tela de login e criacao de conta do Ravenhold
+  author: Ravenhold
+  sandboxed: true
+  scripts: [ ravenhold ]
+  dependencies: [ client_entergame ]
+  autoload: true
+  autoload-priority: 1500
+  @onLoad: init()
+  @onUnload: terminate()

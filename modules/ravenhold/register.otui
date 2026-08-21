@@ -1,0 +1,109 @@
+RavenholdRegisterWindow < MainWindow
+  size: 320 322
+
+RavenholdRegisterWindow
+  id: ravenholdRegister
+  !text: 'Criar conta - Ravenhold'
+  @onEscape: Ravenhold.hideRegister()
+
+  Label
+    !text: tr('Conta')
+    id: lblAcc
+    anchors.left: parent.left
+    anchors.top: parent.top
+    text-auto-resize: true
+
+  TextEdit
+    id: edAcc
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: prev.bottom
+    margin-top: 2
+
+  Label
+    !text: tr('Senha')
+    id: lblPass
+    anchors.left: parent.left
+    anchors.top: prev.bottom
+    margin-top: 6
+    text-auto-resize: true
+
+  TextEdit
+    id: edPass
+    text-hidden: true
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: prev.bottom
+    margin-top: 2
+
+  Label
+    !text: tr('Repetir senha')
+    id: lblPass2
+    anchors.left: parent.left
+    anchors.top: prev.bottom
+    margin-top: 6
+    text-auto-resize: true
+
+  TextEdit
+    id: edPass2
+    text-hidden: true
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: prev.bottom
+    margin-top: 2
+
+  Label
+    !text: tr('Nome do personagem')
+    id: lblChar
+    anchors.left: parent.left
+    anchors.top: prev.bottom
+    margin-top: 6
+    text-auto-resize: true
+
+  TextEdit
+    id: edChar
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: prev.bottom
+    margin-top: 2
+
+  Label
+    !text: tr('Vocacao')
+    id: lblVoc
+    anchors.left: parent.left
+    anchors.top: prev.bottom
+    margin-top: 6
+    text-auto-resize: true
+
+  ComboBox
+    id: cbVoc
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: prev.bottom
+    margin-top: 2
+
+  Label
+    id: lblStatus
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: prev.bottom
+    margin-top: 8
+    text-auto-resize: true
+    text-wrap: true
+    color: #b06a6a
+
+  QtButton
+    id: btnCancel
+    !text: tr('Cancelar')
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    size: 110 22
+    @onClick: Ravenhold.hideRegister()
+
+  QtButton
+    id: btnCreate
+    !text: tr('Criar')
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 110 22
+    @onClick: Ravenhold.doRegister()

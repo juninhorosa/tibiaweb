@@ -1,0 +1,86 @@
+RavenholdWindow < MainWindow
+  size: 300 268
+
+RavenholdWindow
+  id: ravenholdLogin
+  !text: 'Ravenhold'
+  @onEnter: Ravenhold.doLogin()
+
+  Label
+    id: lblAcc
+    !text: tr('Conta')
+    anchors.left: parent.left
+    anchors.top: parent.top
+    text-auto-resize: true
+
+  TextEdit
+    id: edAcc
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: prev.bottom
+    margin-top: 2
+
+  Label
+    id: lblPass
+    !text: tr('Senha')
+    anchors.left: parent.left
+    anchors.top: prev.bottom
+    margin-top: 8
+    text-auto-resize: true
+
+  TextEdit
+    id: edPass
+    text-hidden: true
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: prev.bottom
+    margin-top: 2
+
+  QtCheckBox
+    id: cbRemember
+    !text: tr('Lembrar senha')
+    anchors.left: parent.left
+    anchors.top: prev.bottom
+    margin-top: 10
+
+  HorizontalSeparator
+    id: sep
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: prev.bottom
+    margin-top: 10
+
+  Label
+    id: lblServer
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: prev.bottom
+    margin-top: 6
+    text-auto-resize: true
+    color: #6a9a6a
+
+  Label
+    id: lblStatus
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.top: prev.bottom
+    margin-top: 4
+    text-auto-resize: true
+    text-wrap: true
+    color: #b06a6a
+
+  QtButton
+    id: btnRegister
+    !text: tr('Criar conta')
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    size: 110 22
+    @onClick: Ravenhold.showRegister()
+
+  QtButton
+    id: btnLogin
+    !text: tr('Entrar')
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 110 22
+    @onClick: Ravenhold.doLogin()

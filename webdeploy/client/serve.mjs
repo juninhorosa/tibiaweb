@@ -61,6 +61,38 @@ async function proxyGitHub(req, res, rel) {
   return true;
 }
 
+
+// Proxy para a API de contas, servida pela mesma origem do cliente.
+// O cliente WASM faz HTTP.post para /api/... -- mesma origem significa
+// nenhuma dor de cabeca com CORS nem com COEP.
+const AUTH_ORIGIN = process.env.AUTH_ORIGIN || "http://127.0.0.1:8081";
+
+async function proxyAuth(req, res, rel) {
+  if (!rel.startsWith("/api/")) return false;
+  const chunks = [];
+  for await (const c of req) chunks.push(c);
+  try {
+    const up = await fetch(AUTH_ORIGIN + rel, {
+      method: req.method,
+      headers: { "content-type": req.headers["content-type"] || "application/json" },
+      body: ["GET", "HEAD"].includes(req.method) ? undefined : Buffer.concat(chunks),
+    });
+    const buf = Buffer.from(await up.arrayBuffer());
+    res.writeHead(up.status, {
+      "Content-Type": up.headers.get("content-type") || "application/json",
+      "Content-Length": buf.length,
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "require-corp",
+      "Cross-Origin-Resource-Policy": "same-origin",
+    });
+    res.end(buf);
+  } catch (e) {
+    res.writeHead(502, { "content-type": "application/json" });
+    res.end(JSON.stringify({ ok: false, error: `api indisponivel: ${e.message}` }));
+  }
+  return true;
+}
+
 const server = http.createServer(async (req, res) => {
   const send = (code, body, extra = {}) => {
     res.writeHead(code, {
@@ -75,6 +107,7 @@ const server = http.createServer(async (req, res) => {
   };
 
   let rel = decodeURIComponent(new URL(req.url, "http://x").pathname);
+  if (await proxyAuth(req, res, rel)) return;
   if (await proxyGitHub(req, res, rel)) return;
   if (rel === "/") rel = "/otclient.html";
 
