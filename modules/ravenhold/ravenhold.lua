@@ -72,9 +72,19 @@ function Ravenhold.doLogin()
     enterGameWindow:getChildById('serverHostTextEdit'):setText(CONFIG.host)
     enterGameWindow:getChildById('serverPortTextEdit'):setText(tostring(CONFIG.port))
 
+    -- O combo recebe as opcoes como NUMERO (entergame.lua:234 faz
+    -- addOption(proto)), entao setCurrentOption precisa de numero tambem.
+    -- Passando string a comparacao nunca casa, a versao sai 0 e o login
+    -- tenta carregar /data/things/0/Tibia.dat.
     local combo = enterGameWindow:getChildById('clientComboBox')
     if combo then
-      pcall(function() combo:setCurrentOption(tostring(CONFIG.clientVersion), true) end)
+      pcall(function() combo:setCurrentOption(CONFIG.clientVersion, true) end)
+      if tonumber(combo:getText()) ~= CONFIG.clientVersion then
+        pcall(function() combo:setCurrentOption(tostring(CONFIG.clientVersion), true) end)
+      end
+      if tonumber(combo:getText()) ~= CONFIG.clientVersion then
+        error('versao ' .. CONFIG.clientVersion .. ' nao esta na lista do cliente')
+      end
     end
 
     g_settings.set('host', CONFIG.host)
