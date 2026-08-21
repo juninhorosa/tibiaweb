@@ -146,6 +146,10 @@ node codespaces/setup.mjs            # gera .env com GAME_HOST
 docker compose -f docker-compose.yml -f docker-compose.codespaces.yml up -d
 ```
 
+Na tela de login, alem de servidor e porta, ajuste **Versao do Client para
+1525** -- o dropdown vem em 860, e 1525 e o que casa com a imagem do Canary
+(Server 15.25). E o auto-install de assets so atua a partir de 1281.
+
 **Rode o teste antes de qualquer outra coisa.** A documentacao do GitHub nao
 afirma em lugar nenhum que WebSocket funciona pelo `app.github.dev` — o teste
 existe para nao descobrirmos isso depois de montar o servidor inteiro.
