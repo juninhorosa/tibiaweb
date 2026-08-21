@@ -21,10 +21,19 @@
   // o script na mao -- e esquecer disso rende um 404 confuso, porque as
   // portas so aparecem quando algum processo escuta nelas.
   //
-  // O git pull vem junto de proposito: o script evolui, e um codespace
-  // parado por dias reiniciaria com uma versao velha.
+  // fetch + reset --hard, e nao "git pull --rebase || true".
+  //
+  // O pull com "|| true" falhava em silencio e o start seguia rodando o
+  // script ANTIGO: o codespace subia, publicava as portas e parecia saudavel,
+  // servindo codigo de versoes atras. Um deploy que mente e pior que um que
+  // quebra. O reset garante que o workspace e exatamente origin/main; nada
+  // unico mora aqui, o repositorio e a fonte da verdade.
+  //
+  // Sem "|| true" tambem no reset: se a sincronizacao falhar, e melhor o
+  // start falhar alto do que servir a versao errada.
+  //
   // Roda em primeiro plano de proposito. Com "nohup ... &" o Codespaces
   // encerra o grupo de processos quando o postStartCommand retorna e mata o
   // filho -- o resultado e um codespace que sobe sem nenhuma porta.
-  "postStartCommand": "git pull origin main --rebase --autostash || true; bash webdeploy/start-codespace.sh 2>&1 | tee /tmp/start-codespace.log"
+  "postStartCommand": "git -C /workspaces/tibiaweb fetch origin main && git -C /workspaces/tibiaweb reset --hard origin/main && bash /workspaces/tibiaweb/webdeploy/start-codespace.sh 2>&1 | tee /tmp/start-codespace.log"
 }
