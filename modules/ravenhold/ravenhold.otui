@@ -40,6 +40,7 @@ RavenholdWindow
     id: cbRemember
     !text: tr('Lembrar senha')
     anchors.left: parent.left
+    anchors.right: parent.right
     anchors.top: prev.bottom
     margin-top: 10
 

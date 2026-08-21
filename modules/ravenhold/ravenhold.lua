@@ -149,12 +149,21 @@ function Ravenhold.doRegister()
   end
 
   local ok = pcall(function()
-    HTTP.postJSON(CONFIG.api .. '/register', {
+    -- HTTP.post com checkContentLength = false, e nao postJSON: no build WASM
+    -- o callback do postJSON nunca dispara e a tela fica presa em
+    -- "Criando conta..." mesmo com a conta ja criada no banco. E a mesma
+    -- forma que o modulo oficial (client_entergame/createAccount.lua) usa.
+    HTTP.post(CONFIG.api .. '/register', {
       account = acc,
       password = pass,
       character = char,
       vocation = vocKey
     }, function(data, err)
+      -- com HTTP.post a resposta chega como texto; postJSON e quem decodifica
+      if type(data) == 'string' then
+        local okJson, decodificado = pcall(function() return json.decode(data) end)
+        data = okJson and decodificado or nil
+      end
       if err then
         finish('Erro de rede: ' .. tostring(err), true)
         return
@@ -172,7 +181,7 @@ function Ravenhold.doRegister()
       else
         finish(tostring(data.error or 'Nao foi possivel criar a conta.'), true)
       end
-    end)
+    end, false)
   end)
 
   if not ok then
