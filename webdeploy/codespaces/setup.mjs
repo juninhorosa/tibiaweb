@@ -21,7 +21,14 @@ const gameHost = `${NAME}-8443.${DOMAIN}`;
 const PUBLIC_PORT = 443;
 
 const ROOT = path.join(import.meta.dirname, "..");
-fs.writeFileSync(path.join(ROOT, ".env"), `GAME_HOST=${gameHost}\n`);
+const clientHost = `${NAME}-8080.${DOMAIN}`;
+fs.writeFileSync(
+  path.join(ROOT, ".env"),
+  // CLIENT_HOST existe porque o encaminhamento do Codespaces reescreve o
+  // header Host para localhost:8080 -- o servidor estatico nao tem como
+  // descobrir sozinho o endereco externo pelo qual foi acessado.
+  `GAME_HOST=${gameHost}\nCLIENT_HOST=${clientHost}\n`
+);
 fs.writeFileSync(
   path.join(import.meta.dirname, "endpoints.json"),
   JSON.stringify({ login: loginHost, game: gameHost, port: PUBLIC_PORT }, null, 2)

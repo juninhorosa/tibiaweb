@@ -111,6 +111,9 @@ services:
       AUTH_ORIGIN: http://auth:8081
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       GITHUB_REPOSITORY: ${GITHUB_REPOSITORY:-juninhorosa/tibiaweb}
+      # O encaminhamento do Codespaces reescreve o Host para localhost:8080,
+      # entao o servidor nao descobre sozinho o endereco externo.
+      CLIENT_HOST: ${CLIENT_HOST:-}
     volumes:
       - /workspaces/client-build:/client
 

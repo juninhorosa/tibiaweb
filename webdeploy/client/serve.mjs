@@ -101,15 +101,35 @@ async function proxyAuth(req, res, rel) {
 // Diz ao cliente qual e a URL do login web service.
 //
 // O cliente WASM nao tem como ler window.location -- nada em src/framework
-// expoe a origem da pagina para o Lua. Mas nos vemos o header Host da propria
-// requisicao do navegador, que e exatamente o hostname externo em uso. Assim o
-// bundle deixa de carregar o nome do codespace gravado dentro dele: trocou de
-// codespace, o cliente se reconfigura sozinho, sem recompilar.
+// expoe a origem da pagina para o Lua. Entao quem informa o endereco somos
+// nos, e o bundle deixa de carregar o nome do codespace gravado dentro dele.
+//
+// A ORIGEM do valor importa. O header Host nao serve: o encaminhamento do
+// Codespaces o reescreve para "localhost:8080" antes de chegar aqui, e
+// responder isso seria PIOR que nao responder nada -- o cliente trocaria o
+// endereco correto que veio no bundle por um que nao existe, e o login
+// pararia de funcionar. Por isso a ordem e CLIENT_HOST (gerado pelo setup a
+// partir do nome do codespace), depois x-forwarded-host, e o Host so no fim,
+// ja descartando qualquer variante de localhost.
 const CLIENT_VERSION = Number(process.env.CLIENT_VERSION || 1525);
+const CLIENT_HOST = process.env.CLIENT_HOST || "";
+
+const ehLocal = (h) => {
+  const semPorta = String(h).split(":")[0].toLowerCase();
+  return semPorta === "localhost" || semPorta === "127.0.0.1" || semPorta === "[" || semPorta === "";
+};
+
+function descobrirHost(req) {
+  const encaminhado = String(req.headers["x-forwarded-host"] || "").split(",")[0].trim();
+  for (const candidato of [CLIENT_HOST, encaminhado, req.headers.host]) {
+    if (candidato && !ehLocal(candidato)) return candidato;
+  }
+  return null;
+}
 
 function serveConfig(req, res, rel) {
   if (rel !== "/api/config") return false;
-  const host = req.headers.host;
+  const host = descobrirHost(req);
   const body = JSON.stringify({
     ok: true,
     loginUrl: host ? `https://${host}/login` : null,
