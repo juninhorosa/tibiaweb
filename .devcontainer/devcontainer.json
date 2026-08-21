@@ -23,5 +23,8 @@
   //
   // O git pull vem junto de proposito: o script evolui, e um codespace
   // parado por dias reiniciaria com uma versao velha.
-  "postStartCommand": "git pull origin main --rebase --autostash || true; nohup bash webdeploy/start-codespace.sh > /tmp/start-codespace.log 2>&1 &"
+  // Roda em primeiro plano de proposito. Com "nohup ... &" o Codespaces
+  // encerra o grupo de processos quando o postStartCommand retorna e mata o
+  // filho -- o resultado e um codespace que sobe sem nenhuma porta.
+  "postStartCommand": "git pull origin main --rebase --autostash || true; bash webdeploy/start-codespace.sh 2>&1 | tee /tmp/start-codespace.log"
 }
