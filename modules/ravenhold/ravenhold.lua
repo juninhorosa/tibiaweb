@@ -12,7 +12,19 @@
 Ravenhold = {}
 
 local CONFIG = {
-  host = 'miniature-happiness-6rjq64rj44rc46j7-7171.app.github.dev',
+  -- URL COMPLETA do login web service -- nao mais host+porta do login TCP.
+  --
+  -- O Canary recusa protocolo moderno na porta 7171: em protocollogin.cpp o
+  -- ramo "else if (!oldProtocol)" desconecta sempre. Cliente 12+ tem de
+  -- autenticar por HTTP, e o Canary nao traz esse servico; quem o serve e a
+  -- nossa API (webdeploy/auth/server.js). O cliente ja vai por esse caminho
+  -- sozinho quando a porta nao e 7171 (entergame.lua:822), e tryHttpLogin
+  -- aceita host no formato https://<host>/<caminho> (entergame.lua:656).
+  --
+  -- Este valor e so o ponto de partida: init() pergunta o endereco ao
+  -- servidor, para o bundle nao carregar o nome do codespace gravado dentro
+  -- dele.
+  host = 'https://miniature-happiness-6rjq64rj44rc46j7-8080.app.github.dev/login',
   port = 443,
   clientVersion = 1525,
   -- mesma origem: o servidor estatico faz proxy de /api para a API de contas
@@ -86,6 +98,12 @@ function Ravenhold.doLogin()
         error('versao ' .. CONFIG.clientVersion .. ' nao esta na lista do cliente')
       end
     end
+
+    -- desmarcado = tenta https primeiro (httplogin.cpp:340). Marcado forca
+    -- http:// puro, que numa pagina https o navegador bloqueia como conteudo
+    -- misto. Como e uma opcao que fica gravada, reafirmamos a cada login.
+    local httpBox = enterGameWindow:getChildById('httpLoginBox')
+    if httpBox then httpBox:setChecked(false) end
 
     g_settings.set('host', CONFIG.host)
     g_settings.set('port', CONFIG.port)
@@ -240,6 +258,40 @@ local function setup()
   Ravenhold.showLogin()
 end
 
+-- Pergunta ao servidor qual e a URL do login web service.
+--
+-- Ele responde montando a URL a partir do header Host da nossa propria
+-- requisicao, ou seja, o hostname que o navegador realmente usou. Assim o
+-- bundle nao carrega o nome do codespace gravado dentro dele: trocou de
+-- codespace, o cliente se reajusta sozinho, sem recompilar.
+--
+-- Se falhar, seguimos com o valor padrao de CONFIG -- vale mais um endereco
+-- possivelmente velho que uma tela de login travada esperando resposta.
+local function carregarConfigDoServidor()
+  -- HTTP.post com checkContentLength = false, e nao HTTP.get: este e o unico
+  -- caminho do modulo HTTP cujo callback comprovadamente dispara no build
+  -- WASM. O servidor responde a qualquer metodo nesta rota.
+  HTTP.post(CONFIG.api .. '/config', {}, function(data, err)
+    if err then return end
+    if type(data) == 'string' then
+      local okJson, decodificado = pcall(function() return json.decode(data) end)
+      data = okJson and decodificado or nil
+    end
+    if type(data) ~= 'table' or type(data.loginUrl) ~= 'string' then return end
+
+    CONFIG.host = data.loginUrl
+    if tonumber(data.clientVersion) then
+      CONFIG.clientVersion = tonumber(data.clientVersion)
+    end
+    if loginWindow then
+      local lbl = loginWindow:getChildById('lblServer')
+      if lbl then
+        lbl:setText('Servidor: Ravenhold  |  protocolo ' .. tostring(CONFIG.clientVersion))
+      end
+    end
+  end, false)
+end
+
 function init()
   if type(Services) == 'table' and type(Services.ravenhold) == 'table' then
     for k, v in pairs(Services.ravenhold) do
@@ -248,6 +300,9 @@ function init()
   end
 
   local ok, err = pcall(setup)
+  if ok then
+    pcall(carregarConfigDoServidor)
+  end
   if not ok then
     g_logger.error('[Ravenhold] tela propria desativada: ' .. tostring(err))
     if loginWindow then pcall(function() loginWindow:destroy() end) end

@@ -76,6 +76,11 @@ services:
       DB_USER: canary
       DB_PASSWORD: canary
       DB_NAME: canary
+      # Vao na resposta do login web service: e daqui que o cliente tira o
+      # endereco do mundo para a segunda conexao, nao do que foi digitado.
+      GAME_HOST: ${GAME_HOST:?rode o script de setup primeiro para gerar .env}
+      GAME_PORT: "443"
+      WORLD_NAME: Ravenhold
 
   proxy-login:
     build: ./proxy

@@ -65,10 +65,15 @@ async function proxyGitHub(req, res, rel) {
 // Proxy para a API de contas, servida pela mesma origem do cliente.
 // O cliente WASM faz HTTP.post para /api/... -- mesma origem significa
 // nenhuma dor de cabeca com CORS nem com COEP.
+//
+// /login entra na mesma regra e e o mais importante dos dois: e o login web
+// service que o cliente 12+ exige (o Canary nao tem um). Servi-lo da origem
+// da pagina evita CORS e evita que o nosso proprio COEP: require-corp barre a
+// resposta -- que e o que aconteceria apontando o cliente para outro host.
 const AUTH_ORIGIN = process.env.AUTH_ORIGIN || "http://127.0.0.1:8081";
 
 async function proxyAuth(req, res, rel) {
-  if (!rel.startsWith("/api/")) return false;
+  if (!rel.startsWith("/api/") && rel !== "/login") return false;
   const chunks = [];
   for await (const c of req) chunks.push(c);
   try {
@@ -93,6 +98,35 @@ async function proxyAuth(req, res, rel) {
   return true;
 }
 
+// Diz ao cliente qual e a URL do login web service.
+//
+// O cliente WASM nao tem como ler window.location -- nada em src/framework
+// expoe a origem da pagina para o Lua. Mas nos vemos o header Host da propria
+// requisicao do navegador, que e exatamente o hostname externo em uso. Assim o
+// bundle deixa de carregar o nome do codespace gravado dentro dele: trocou de
+// codespace, o cliente se reconfigura sozinho, sem recompilar.
+const CLIENT_VERSION = Number(process.env.CLIENT_VERSION || 1525);
+
+function serveConfig(req, res, rel) {
+  if (rel !== "/api/config") return false;
+  const host = req.headers.host;
+  const body = JSON.stringify({
+    ok: true,
+    loginUrl: host ? `https://${host}/login` : null,
+    clientVersion: CLIENT_VERSION,
+  });
+  res.writeHead(200, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Content-Length": Buffer.byteLength(body),
+    "Cache-Control": "no-store",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Embedder-Policy": "require-corp",
+    "Cross-Origin-Resource-Policy": "same-origin",
+  });
+  res.end(body);
+  return true;
+}
+
 const server = http.createServer(async (req, res) => {
   const send = (code, body, extra = {}) => {
     res.writeHead(code, {
@@ -107,6 +141,7 @@ const server = http.createServer(async (req, res) => {
   };
 
   let rel = decodeURIComponent(new URL(req.url, "http://x").pathname);
+  if (serveConfig(req, res, rel)) return;
   if (await proxyAuth(req, res, rel)) return;
   if (await proxyGitHub(req, res, rel)) return;
   if (rel === "/") rel = "/otclient.html";
