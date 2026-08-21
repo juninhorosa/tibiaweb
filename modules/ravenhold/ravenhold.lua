@@ -55,6 +55,16 @@ end
 
 function Ravenhold.showLogin()
   if not loginWindow then return end
+
+  -- Ja dentro do jogo a tela de login nao tem o que fazer aqui. O
+  -- EnterGame.show original e chamado ao cancelar as caixas de espera
+  -- ("Connecting...", lista de personagens), e sem esta guarda a janela
+  -- aparece por cima do mundo -- sem botao de fechar, porque a nossa nao tem.
+  if g_game.isOnline() then
+    loginWindow:hide()
+    return
+  end
+
   if enterGameWindow then enterGameWindow:hide() end
   loginWindow:show()
   loginWindow:raise()
