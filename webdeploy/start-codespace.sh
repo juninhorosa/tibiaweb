@@ -25,7 +25,11 @@ if [ ! -f "${CLIENT_DIR}/otclient.wasm" ]; then
   echo "==> baixando o bundle do cliente (build ${RUN_ID})"
   ART=$(curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" \
     "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts" \
-    | grep -oE '"id":[0-9]+' | head -1 | cut -d: -f2)
+    | grep -oE '"id": ?[0-9]+' | head -1 | grep -oE '[0-9]+')
+  if [ -z "${ART}" ]; then
+    echo "Nenhum artefato no build ${RUN_ID} (expirou? o retention e 14 dias)." >&2
+    exit 1
+  fi
   mkdir -p /workspaces/client-build
   curl -sL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
     "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ART}/zip" -o /tmp/web.zip
