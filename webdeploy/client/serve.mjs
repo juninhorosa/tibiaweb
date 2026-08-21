@@ -22,7 +22,46 @@ const MIME = {
   ".ico": "image/x-icon",
 };
 
-const server = http.createServer((req, res) => {
+
+// Proxy de mesma origem para o GitHub.
+//
+// Existe como remedio: o download dos assets vai para codeload.github.com, que
+// pode ser barrado pelo nosso proprio Cross-Origin-Embedder-Policy. Servindo
+// pela mesma origem, CORS e COEP deixam de ser questao.
+//
+// Restrito a tres hosts do GitHub de proposito -- nao aceita URL arbitraria,
+// que transformaria isto num proxy aberto.
+const GH_HOSTS = {
+  raw: "https://raw.githubusercontent.com",
+  api: "https://api.github.com",
+  codeload: "https://codeload.github.com",
+};
+
+async function proxyGitHub(req, res, rel) {
+  const m = rel.match(/^\/gh\/(raw|api|codeload)\/(.*)$/);
+  if (!m) return false;
+  const [, key, rest] = m;
+  const url = `${GH_HOSTS[key]}/${rest}${new URL(req.url, "http://x").search}`;
+  try {
+    const up = await fetch(url, { headers: { "user-agent": "ravenhold-proxy" } });
+    const buf = Buffer.from(await up.arrayBuffer());
+    res.writeHead(up.status, {
+      "Content-Type": up.headers.get("content-type") || "application/octet-stream",
+      "Content-Length": buf.length,
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "require-corp",
+      "Cross-Origin-Resource-Policy": "same-origin",
+    });
+    res.end(buf);
+  } catch (e) {
+    res.writeHead(502, { "content-type": "text/plain" });
+    res.end(`proxy falhou: ${e.message}
+`);
+  }
+  return true;
+}
+
+const server = http.createServer(async (req, res) => {
   const send = (code, body, extra = {}) => {
     res.writeHead(code, {
       // sem estes dois, crossOriginIsolated === false e o wasm nao sobe
@@ -36,6 +75,7 @@ const server = http.createServer((req, res) => {
   };
 
   let rel = decodeURIComponent(new URL(req.url, "http://x").pathname);
+  if (await proxyGitHub(req, res, rel)) return;
   if (rel === "/") rel = "/otclient.html";
 
   // impede escapar da raiz via ../

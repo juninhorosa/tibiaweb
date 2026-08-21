@@ -187,15 +187,51 @@ passar. Ja `codeload.github.com` -- usado no caminho de arquivo ZIP, que a
 documentacao chama de **padrao** -- e o duvidoso.
 
 Nao mexemos nisso preventivamente porque `require-corp` e o que esta provado
-carregando o cliente hoje. Se o download falhar, tente nesta ordem:
+carregando o cliente hoje.
 
-1. Trocar para `Cross-Origin-Embedder-Policy: credentialless` em
-   `client/serve.mjs` e `pages/_headers`. Mantem `crossOriginIsolated`
-   (logo, pthreads seguem funcionando) mas dispensa CORP em recursos de
-   outra origem. Chrome suporta desde a 96; Safari nao.
-2. Se ainda falhar, servir os assets pela nossa propria origem: adicionar
-   uma rota de proxy em `client/serve.mjs` e apontar `config.releasesUrl`
-   para ela. Resolve CORS e COEP de uma vez, ao custo de banda nossa.
+**A boa noticia: da para corrigir sem recompilar.** O `cloneConfig()` do
+`client_assets` le de `Services.clientAssets` a cada operacao, entao um
+override em tempo de execucao pega na hora. O cliente tem terminal Lua em
+**Ctrl+T**.
+
+Remedio 1 -- evitar o `codeload.github.com` e usar o caminho de manifesto, que
+sai de `raw.githubusercontent.com` (esse responde com CORS):
+
+```lua
+Services.clientAssets.preferArchive = false
+```
+
+Remedio 2 -- servir tudo pela nossa propria origem, usando a rota de proxy que
+ja existe em `client/serve.mjs` (`/gh/raw`, `/gh/api`, `/gh/codeload`):
+
+```lua
+local base = "https://<nome-do-codespace>-8080.app.github.dev/gh"
+Services.clientAssets.rawBaseUrl = base .. "/raw/%s/%s/"
+Services.clientAssets.releasesUrl = base .. "/api/repos/dudantas/tibia-client/releases?per_page=100"
+```
+
+Confirmado que os assets certos existem: a release `15.25.0a00a0` do
+`dudantas/tibia-client` casa com o protocolo 1525.
+
+Se preferir alterar no build (permanente), os mesmos campos ficam em
+`Services.clientAssets` no `init.lua`. Como ultimo recurso, trocar o header:
+
+`Cross-Origin-Embedder-Policy: credentialless` em `client/serve.mjs` e
+`pages/_headers`. Mantem `crossOriginIsolated` (logo, pthreads seguem
+funcionando) mas dispensa CORP em recursos de outra origem. Chrome suporta
+desde a 96; Safari nao.
+
+## Nao pre-carregue versao sem os assets
+
+`ENABLE_SERVERS` no `init.lua` esta **desligado de proposito**. Com exatamente
+uma entrada em `Servers_init`, o cliente pre-carrega os assets daquela versao
+ainda no boot; faltando os arquivos, ele abre um modal de erro que captura o
+input -- nem o seletor de idioma responde, e a tela de login fica inalcancavel.
+
+Pior: o auto-install so dispara no clique de "Entrar"
+(`client_entergame/entergame.lua:803`), depois do boot. O preload impede
+justamente o fluxo que baixaria o que falta. Religue so depois que
+`data/things/1525/` estiver povoado.
 
 Sintoma tipico no console: `net::ERR_BLOCKED_BY_RESPONSE` ou
 `NotSameOriginAfterDefaultedToSameOriginByCoep`.
