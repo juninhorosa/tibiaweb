@@ -17,18 +17,23 @@ fi
 DOMAIN="${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
 
 # ---------------------------------------------------------------------------
-# 0. gh -- usado para publicar as portas. Nao esta no apt padrao do Ubuntu;
-#    precisa do repositorio oficial do GitHub.
+# 0. gh -- so serve para publicar as portas no fim. Fica com timeout e nunca
+#    derruba o script: rodando dentro do postStartCommand, um apt-get travado
+#    esperando entrada segurava tudo e os servicos nunca subiam.
 # ---------------------------------------------------------------------------
-if ! command -v gh >/dev/null 2>&1; then
-  echo "==> instalando o gh"
-  curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
-    | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg 2>/dev/null || true
-  echo "deb [signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
-    | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null || true
-  sudo apt-get update -qq >/dev/null 2>&1 || true
-  sudo apt-get install -y -qq gh >/dev/null 2>&1 || true
-fi
+instalar_gh() {
+  command -v gh >/dev/null 2>&1 && return 0
+  echo "==> instalando o gh (com timeout)"
+  timeout 60 bash -c '
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+      | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg 2>/dev/null
+    echo "deb [signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+      | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+    sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq gh >/dev/null 2>&1
+  ' >/dev/null 2>&1 || echo "    gh nao instalado; publique as portas na aba Portas"
+  return 0
+}
 
 # ---------------------------------------------------------------------------
 # 1. bundle do cliente (baixa uma vez; o disco do codespace persiste)
@@ -108,6 +113,7 @@ is_public() {
   [ "${code}" = "200" ]
 }
 
+instalar_gh
 echo "==> publicando as portas"
 PENDENTES=""
 for p in ${PUBLIC_PORTS}; do
