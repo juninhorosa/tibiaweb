@@ -7,7 +7,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 CLIENT_DIR="/workspaces/client-build/build-emscripten-web"
-PUBLIC_PORTS="7171 7172 8080"   # a 8081 fica privada: so o proxy /api a alcanca
+PUBLIC_PORTS="7171 8443 8080"   # a 8081 fica privada: so o proxy /api a alcanca
 
 if [ -z "${CODESPACE_NAME:-}" ]; then
   echo "Isto precisa rodar dentro de um codespace." >&2

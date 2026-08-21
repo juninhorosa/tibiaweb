@@ -17,7 +17,7 @@ if (!NAME || !DOMAIN) {
 }
 
 const loginHost = `${NAME}-7171.${DOMAIN}`;
-const gameHost = `${NAME}-7172.${DOMAIN}`;
+const gameHost = `${NAME}-8443.${DOMAIN}`;
 const PUBLIC_PORT = 443;
 
 const ROOT = path.join(import.meta.dirname, "..");

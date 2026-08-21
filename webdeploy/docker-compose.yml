@@ -86,15 +86,12 @@ services:
       TARGET_HOST: "canary"
       TARGET_PORT: "7171"
 
-  # 7172 e nao 8443: o encaminhamento do GitHub trata 8443 como HTTPS por
-  # convencao e tenta TLS contra o nosso proxy, que fala HTTP puro. As portas
-  # sem essa convencao (7171, 8080, 8081) funcionam; so a 8443 falhava.
   proxy-game:
     build: ./proxy
     restart: unless-stopped
     depends_on: [canary]
     environment:
-      PORT: "7172"
+      PORT: "8443"
       TARGET_HOST: "canary"
       TARGET_PORT: "443"
 

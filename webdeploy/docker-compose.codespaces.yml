@@ -16,7 +16,7 @@ services:
 
   proxy-game:
     ports:
-      - "7172:7172"
+      - "8443:8443"
 
   client:
     ports:
