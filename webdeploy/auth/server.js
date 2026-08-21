@@ -254,11 +254,21 @@ async function loginWebService(body) {
 
     // O Canary reabre a conta a partir desta string no login do mundo
     // (protocolgame.cpp:1291 corta no primeiro caractere de nova linha) e
-    // procura pela coluna `email`.
-    // Mandar acc.name aqui daria "conta nao encontrada" mesmo com a senha
-    // certa. Com authType = "password" (o padrao) a senha em claro dentro da
-    // sessao e o que o servidor confere.
-    const descritorCanary = acc.email || acc.name;
+    // procura pela coluna `email`. Mandar acc.name aqui daria "conta nao
+    // encontrada" mesmo com a senha certa. Com authType = "password" (o
+    // padrao) a senha em claro dentro da sessao e o que o servidor confere.
+    //
+    // Contas criadas antes de o cadastro passar a gravar `email` ficaram com
+    // a coluna vazia. Elas entram aqui (a busca aceita `name`), mas
+    // quebrariam no login do mundo, onde so `email` e consultado. Preenchemos
+    // na primeira vez que a conta loga -- e o unico momento em que sabemos
+    // que a senha confere.
+    let descritorCanary = acc.email;
+    if (!descritorCanary) {
+      await conn.query("UPDATE accounts SET email = ? WHERE id = ?", [acc.name, acc.id]);
+      descritorCanary = acc.name;
+      console.log(`[login] conta ${acc.name} estava sem email; preenchido`);
+    }
 
     const premiumUntil = Number(acc.premdays) > 0
       ? Math.floor(Date.now() / 1000) + Number(acc.premdays) * 86400
