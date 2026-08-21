@@ -50,6 +50,18 @@ docker compose -f docker-compose.yml -f docker-compose.codespaces.yml up -d
 pkill -f "client/serve.mjs" 2>/dev/null || true
 CLIENT_DIR="${CLIENT_DIR}" nohup node client/serve.mjs > /tmp/client-serve.log 2>&1 &
 
+# 5. tentar abrir as portas sozinho -- a visibilidade nao sobrevive a
+# um restart do codespace, e refazer isso na mao toda vez e um convite
+# a esquecer e perder tempo depurando um 302.
+if command -v gh >/dev/null 2>&1; then
+  echo "==> ajustando visibilidade das portas"
+  for p in 7171 8443 8080; do
+    gh codespace ports visibility "${p}:public" -c "${CODESPACE_NAME}" 2>/dev/null       && echo "    ${p} -> public"       || echo "    ${p} -> falhou (faca na aba Portas)"
+  done
+else
+  echo "==> gh nao instalado; abra as portas na aba Portas"
+fi
+
 D="${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
 cat <<TXT
 
@@ -63,11 +75,17 @@ cat <<TXT
       servidor : ${CODESPACE_NAME}-7171.${D}
       porta    : 443
 
-  ANTES DE TESTAR: na aba "Portas", as tres (7171, 8443, 8080)
-  precisam estar com visibilidade PUBLIC. O GitHub nao honra a
-  marcacao do devcontainer.json automaticamente -- clique com o
-  botao direito em cada uma > Visibilidade da porta > Public.
-  Porta privada responde 302 e o cliente WASM nao manda token.
+  PORTAS: 7171, 8443 e 8080 precisam estar PUBLIC.
+
+  Isso reseta A CADA restart do codespace -- a marcacao do
+  devcontainer.json nao e honrada e a visibilidade nao persiste.
+  Porta privada responde 302 (redirect de login) e o cliente WASM
+  nao manda token nenhum, entao a pagina simplesmente nao abre.
+
+  O script ja tentou abrir sozinho acima. Se falhou, faca na aba
+  "Portas": botao direito em cada uma > Visibilidade da porta >
+  Public. Deixe a 8081 privada: ela e interna, so o proxy /api
+  precisa dela.
 
   Acompanhe o servidor:
       docker compose -f docker-compose.yml -f docker-compose.codespaces.yml logs -f canary
