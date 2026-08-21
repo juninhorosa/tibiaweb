@@ -6,13 +6,16 @@
     "ghcr.io/devcontainers/features/node:1": { "version": "22" },
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
-  // 7171 = login, 8443 = mundo do jogo. Cada porta vira um hostname
-  // proprio em app.github.dev, sempre publicado na 443 -- que e o
-  // formato wss://host:porta que o cliente monta.
-  "forwardPorts": [7171, 8443, 8080],
+  // 7171 = login, 7172 = mundo do jogo. Cada porta vira um hostname proprio
+  // em app.github.dev, sempre publicado na 443 -- que e o formato
+  // wss://host:porta que o cliente monta.
+  //
+  // 7172 e nao 8443: o encaminhamento do GitHub trata 8443 como HTTPS por
+  // convencao e tenta TLS contra o proxy, que fala HTTP puro.
+  "forwardPorts": [7171, 7172, 8080],
   "portsAttributes": {
     "7171": { "label": "login (wss)", "visibility": "public", "onAutoForward": "silent" },
-    "8443": { "label": "game world (wss)", "visibility": "public", "onAutoForward": "silent" },
+    "7172": { "label": "game world (wss)", "visibility": "public", "onAutoForward": "silent" },
     "8080": { "label": "cliente web", "visibility": "public", "onAutoForward": "silent" }
   },
   "postCreateCommand": "cd webdeploy/proxy && npm install --omit=dev",
