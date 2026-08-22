@@ -43,15 +43,19 @@ jobs:
       # cacheavel. A alternativa era o auto-install do client_assets, que puxa
       # 6855 arquivos um a um no navegador; nao e viavel.
       #
-      # sparse-checkout em vez do zip da release: o zip tem 395 MB porque
+      # A versao e 1511, nao 1525, porque e a que o BINARIO do Canary v3.6.1
+# espera. O branch main do Canary ja usa 1525, mas quem roda aqui e o
+# release -- conferir o main foi o que me fez errar isto uma vez.
+#
+# sparse-checkout em vez do zip da release: o zip tem 395 MB porque
       # carrega bin/ (client.exe, Qt, BattlEye), inutil no navegador. Assim
       # baixamos so os 110 MB de assets/. sounds/ (97 MB) fica de fora de
       # proposito -- o cliente roda sem eles.
       - name: Assar os assets do cliente no bundle
         env:
           ASSETS_REPO: dudantas/tibia-client
-          ASSETS_TAG: 15.25.0a00a0
-          CLIENT_VERSION: "1525"
+          ASSETS_TAG: 15.11.c9d1cf
+          CLIENT_VERSION: "1511"
         run: |
           set -euo pipefail
           dest="data/things/${CLIENT_VERSION}"

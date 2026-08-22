@@ -26,7 +26,10 @@ local CONFIG = {
   -- dele.
   host = 'https://miniature-happiness-6rjq64rj44rc46j7-8080.app.github.dev/login',
   port = 443,
-  clientVersion = 1525,
+  -- 1511 e a versao que o BINARIO do Canary v3.6.1 aceita. O main do Canary
+  -- ja esta em 1525, mas quem roda e o release; conferir o main em vez da tag
+  -- rendeu um "Only clients with protocol 15.11 allowed!" depois do login.
+  clientVersion = 1511,
   -- mesma origem: o servidor estatico faz proxy de /api para a API de contas
   api = '/api'
 }
